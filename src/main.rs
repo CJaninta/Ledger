@@ -1,7 +1,7 @@
 use std::sync::Arc;
-use axum::{ http::Method, routing::post, Router };
+use axum::{ http::Method, routing::{ get, post, delete }, Router };
 use ledger::{
-    handlers::user::{ create_user },
+    handlers::user::{ create_user, get_user_by_id, delete_user, update_user },
     setting::Settings,
     usecases::user::{ UserUseCase, UserUseCaseImpl },
     repositories::user::{ UserRepo },
@@ -25,7 +25,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let user_repo = UserRepo::new(database_pool);
     let user_usecase = UserUseCaseImpl::new(user_repo);
-    let app = create_router(&user_usecase);
+    let app = create_router(user_usecase);
 
     let bind_addr = format!("0.0.0.0:{}", settings.server_port);
     let listener = tokio::net::TcpListener::bind(&bind_addr).await?;
@@ -35,19 +35,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn create_router(user_usecase: &Arc<UserUseCaseImpl>) -> Router {
+fn create_router(user_usecase: Arc<UserUseCaseImpl>) -> Router {
+    let user_usecase = Arc::clone(&user_usecase);
+
     Router::new()
         // Routes
-        .route(
-            "/api/v1/user/create",
-            post({
-                let usecase = Arc::clone(&user_usecase);
-                move |body| create_user(body, usecase)
-            })
-        )
+        .route("/api/v1/user/create", post(create_user))
+        .route("/api/v1/user", get(get_user_by_id))
+        .route("/api/v1/user/update", post(update_user))
+        .route("/api/v1/user/delete", delete(delete_user))
         // Middleware
         .layer(cors_layer())
         .layer(TraceLayer::new_for_http())
+        // State
+        .with_state(user_usecase)
 }
 
 fn cors_layer() -> CorsLayer {

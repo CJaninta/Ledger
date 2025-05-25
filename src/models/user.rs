@@ -8,26 +8,26 @@ pub struct CreateUserRequest {
 
 #[derive(Debug, Serialize)]
 pub struct CreateUserResponse {
-    pub id: u64,
+    pub id: i32,
 }
 
 #[derive(Debug, Serialize)]
 pub struct UserResponse {
-    pub id: u64,
+    pub id: i32,
     pub name: String,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(sqlx::FromRow, Debug, Deserialize)]
 pub struct UpdateUserRequest {
-    pub id: u64,
+    pub id: i32,
     pub name: String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct ByIDRequest {
-    pub id: u64,
+    pub id: Option<i32>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

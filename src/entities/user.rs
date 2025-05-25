@@ -2,7 +2,7 @@ use chrono::NaiveDateTime;
 
 #[derive(sqlx::FromRow, Debug)]
 pub struct User {
-    pub id: u64,
+    pub id: i32,
     pub name: String,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,

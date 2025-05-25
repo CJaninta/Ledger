@@ -1,4 +1,5 @@
 use std::{ sync::Arc };
+use mockall::automock;
 use crate::{
     models::{
         error::{ APIError, IntoErrorResponse },
@@ -8,19 +9,22 @@ use crate::{
 };
 
 #[async_trait::async_trait]
+#[automock]
 pub trait UserUseCase {
     fn new(user_repo: Arc<UserRepoImpl>) -> Arc<Self>;
     async fn create_user(
         &self,
         request: CreateUserRequest
     ) -> Result<CreateUserResponse, Box<dyn IntoErrorResponse>>;
-    fn update_user(
+    async fn update_user(
         &self,
-        user_id: u64,
         request: UpdateUserRequest
     ) -> Result<UserResponse, Box<dyn IntoErrorResponse>>;
-    fn delete_user(&self, user_id: u64) -> Result<(), Box<dyn IntoErrorResponse>>;
-    fn get_user(&self, user_id: u64) -> Result<UserResponse, Box<dyn IntoErrorResponse>>;
+    async fn delete_user(&self, user_id: i32) -> Result<(), Box<dyn IntoErrorResponse>>;
+    async fn get_user_by_id(
+        &self,
+        user_id: i32
+    ) -> Result<UserResponse, Box<dyn IntoErrorResponse>>;
 }
 
 pub struct UserUseCaseImpl {
@@ -61,53 +65,72 @@ impl UserUseCase for UserUseCaseImpl {
         }
     }
 
-    fn update_user(
+    async fn get_user_by_id(
         &self,
-        user_id: u64,
-        request: UpdateUserRequest
+        user_id: i32
     ) -> Result<UserResponse, Box<dyn IntoErrorResponse>> {
-        // if user_id == 0 {
-        //     return Err(Box::new(APIError::CreateUserError("Invalid user ID".to_string())));
-        // }
-
-        // if request.name.is_empty() {
-        //     return Err(Box::new(APIError::CreateUserError("Username cannot be empty".to_string())));
-        // }
-
-        Ok(UserResponse {
-            id: user_id, // Placeholder for user ID
-            name: request.name,
-            created_at: chrono::NaiveDateTime
-                ::parse_from_str("2023-10-01T00:00:00", "%Y-%m-%dT%H:%M:%S")
-                .unwrap(),
-            updated_at: chrono::NaiveDateTime
-                ::parse_from_str("2023-10-01T00:00:00", "%Y-%m-%dT%H:%M:%S")
-                .unwrap(),
-        })
-    }
-
-    fn delete_user(&self, user_id: u64) -> Result<(), Box<dyn IntoErrorResponse>> {
-        if user_id == 0 {
-            return Err(Box::new(APIError::DeleteUserError("Invalid user ID".to_string())));
-        }
-
-        Ok(())
-    }
-
-    fn get_user(&self, user_id: u64) -> Result<UserResponse, Box<dyn IntoErrorResponse>> {
         if user_id == 0 {
             return Err(Box::new(APIError::GetUserError("Invalid user ID".to_string())));
         }
 
-        Ok(UserResponse {
-            id: user_id,
-            name: "Sample User".to_string(),
-            created_at: chrono::NaiveDateTime
-                ::parse_from_str("2023-10-01T00:00:00", "%Y-%m-%dT%H:%M:%S")
-                .unwrap(),
-            updated_at: chrono::NaiveDateTime
-                ::parse_from_str("2023-10-01T00:00:00", "%Y-%m-%dT%H:%M:%S")
-                .unwrap(),
-        })
+        let result_query = self.user_repo.get_user_by_id(user_id).await;
+        match result_query {
+            Ok(user) => {
+                Ok(UserResponse {
+                    id: user.id,
+                    name: user.name,
+                    created_at: user.created_at,
+                    updated_at: user.updated_at,
+                })
+            }
+            Err(e) => {
+                Err(Box::new(APIError::GetUserError(format!("Failed to get user, err: {}", e))))
+            }
+        }
+    }
+
+    async fn update_user(
+        &self,
+        request: UpdateUserRequest
+    ) -> Result<UserResponse, Box<dyn IntoErrorResponse>> {
+        if request.id == 0 {
+            return Err(Box::new(APIError::UpdateUserError("Invalid user ID".to_string())));
+        }
+
+        let result_update = self.user_repo.update_user(request.id, request.name.as_str()).await;
+        match result_update {
+            Ok(user) => {
+                Ok(UserResponse {
+                    id: user.id,
+                    name: user.name,
+                    created_at: user.created_at,
+                    updated_at: user.updated_at,
+                })
+            }
+            Err(e) => {
+                Err(
+                    Box::new(
+                        APIError::UpdateUserError(format!("Failed to update user, err: {}", e))
+                    )
+                )
+            }
+        }
+    }
+
+    async fn delete_user(&self, user_id: i32) -> Result<(), Box<dyn IntoErrorResponse>> {
+        if user_id == 0 {
+            return Err(Box::new(APIError::DeleteUserError("Invalid user ID".to_string())));
+        }
+
+        let result_delete = self.user_repo.delete_user(user_id).await;
+        match result_delete {
+            Ok(_) => Ok(()),
+            Err(e) =>
+                Err(
+                    Box::new(
+                        APIError::DeleteUserError(format!("Failed to delete user, err: {}", e))
+                    )
+                ),
+        }
     }
 }

@@ -40,7 +40,7 @@ impl IntoErrorResponse for APIError {
             Self::UserAlreadyExists(message) =>
                 ErrorResponse {
                     error: format!("user is already exists: {}", message),
-                    status_code: StatusCode::INTERNAL_SERVER_ERROR,
+                    status_code: StatusCode::BAD_REQUEST,
                 },
             Self::CreateUserError(message) =>
                 ErrorResponse {
