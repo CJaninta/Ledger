@@ -35,4 +35,15 @@ impl Settings {
                 .expect("SERVER_PORT must be a valid number"),
         })
     }
+
+    pub fn get_database_url(&self) -> String {
+        format!(
+            "mysql://{}:{}@{}:{}/{}",
+            self.database_user,
+            self.database_password,
+            self.database_url,
+            self.database_port,
+            self.database_name
+        )
+    }
 }

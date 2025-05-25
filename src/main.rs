@@ -1,6 +1,12 @@
 use std::sync::Arc;
 use axum::{ http::Method, routing::post, Router };
-use ledger::{ handlers::user::{ create_user }, setting::Settings, usecases::user::{ UserUseCase } };
+use ledger::{
+    handlers::user::{ create_user },
+    setting::Settings,
+    usecases::user::{ UserUseCase, UserUseCaseImpl },
+    repositories::user::{ UserRepo },
+};
+use sqlx::mysql::MySqlPoolOptions;
 use tracing::{ info, Level };
 use tower_http::{ cors::{ Any, CorsLayer }, trace::TraceLayer };
 use tracing_subscriber;
@@ -12,7 +18,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let settings = Settings::new()?;
     info!("Settings loaded successfully");
 
-    let user_usecase = UserUseCase::new();
+    let database_pool = MySqlPoolOptions::new()
+        .max_connections(5)
+        .connect(&settings.get_database_url().as_str()).await?;
+    info!("Database connection pool created");
+
+    let user_repo = UserRepo::new(database_pool);
+    let user_usecase = UserUseCaseImpl::new(user_repo);
     let app = create_router(&user_usecase);
 
     let bind_addr = format!("0.0.0.0:{}", settings.server_port);
@@ -23,7 +35,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn create_router(user_usecase: &Arc<UserUseCase>) -> Router {
+fn create_router(user_usecase: &Arc<UserUseCaseImpl>) -> Router {
     Router::new()
         // Routes
         .route(

@@ -29,6 +29,9 @@ pub trait IntoErrorResponse {
 pub enum APIError {
     UserAlreadyExists(String),
     CreateUserError(String),
+    UpdateUserError(String),
+    DeleteUserError(String),
+    GetUserError(String),
 }
 
 impl IntoErrorResponse for APIError {
@@ -42,6 +45,21 @@ impl IntoErrorResponse for APIError {
             Self::CreateUserError(message) =>
                 ErrorResponse {
                     error: format!("create user error: {}", message),
+                    status_code: StatusCode::INTERNAL_SERVER_ERROR,
+                },
+            Self::UpdateUserError(message) =>
+                ErrorResponse {
+                    error: format!("update user error: {}", message),
+                    status_code: StatusCode::INTERNAL_SERVER_ERROR,
+                },
+            Self::DeleteUserError(message) =>
+                ErrorResponse {
+                    error: format!("delete user error: {}", message),
+                    status_code: StatusCode::INTERNAL_SERVER_ERROR,
+                },
+            Self::GetUserError(message) =>
+                ErrorResponse {
+                    error: format!("get user error: {}", message),
                     status_code: StatusCode::INTERNAL_SERVER_ERROR,
                 },
         }
