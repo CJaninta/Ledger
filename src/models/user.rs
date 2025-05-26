@@ -1,7 +1,7 @@
 use serde::{ Deserialize, Serialize };
 use chrono::NaiveDateTime;
 
-#[derive(sqlx::FromRow, Debug, Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct CreateUserRequest {
     pub name: String,
 }
@@ -19,7 +19,7 @@ pub struct UserResponse {
     pub updated_at: NaiveDateTime,
 }
 
-#[derive(sqlx::FromRow, Debug, Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct UpdateUserRequest {
     pub id: i32,
     pub name: String,
@@ -30,7 +30,7 @@ pub struct ByIDRequest {
     pub id: Option<i32>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize)]
 pub struct GetUserTransactionResponse {
     pub user_name: String,
     pub total_income: f32,

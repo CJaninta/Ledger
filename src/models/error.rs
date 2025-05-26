@@ -32,6 +32,8 @@ pub enum APIError {
     UpdateUserError(String),
     DeleteUserError(String),
     GetUserError(String),
+    CreateTransactionError(String),
+    UnExpectedError(String),
 }
 
 impl IntoErrorResponse for APIError {
@@ -60,6 +62,16 @@ impl IntoErrorResponse for APIError {
             Self::GetUserError(message) =>
                 ErrorResponse {
                     error: format!("get user error: {}", message),
+                    status_code: StatusCode::INTERNAL_SERVER_ERROR,
+                },
+            Self::CreateTransactionError(message) =>
+                ErrorResponse {
+                    error: format!("create transaction error: {}", message),
+                    status_code: StatusCode::INTERNAL_SERVER_ERROR,
+                },
+            Self::UnExpectedError(message) =>
+                ErrorResponse {
+                    error: format!("unexpected error: {}", message),
                     status_code: StatusCode::INTERNAL_SERVER_ERROR,
                 },
         }

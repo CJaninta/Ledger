@@ -1,8 +1,6 @@
 use std::sync::Arc;
 use mockall::automock;
 use sqlx::{ MySqlPool };
-use sqlx::mysql::MySqlQueryResult;
-
 use crate::entities::user::User;
 
 #[async_trait::async_trait]
@@ -27,7 +25,7 @@ impl UserRepo for UserRepoImpl {
 
     async fn create_user(&self, name: &str) -> Result<i32, sqlx::Error> {
         // Insert the user
-        let result: MySqlQueryResult = sqlx
+        let result = sqlx
             ::query("INSERT INTO users (name) VALUES (?)")
             .bind(name)
             .execute(&self.pool).await?;

@@ -1,10 +1,16 @@
 use std::sync::Arc;
 use axum::{ http::Method, routing::{ get, post, delete }, Router };
 use ledger::{
-    handlers::user::{ create_user, get_user_by_id, delete_user, update_user },
+    handlers::{
+        transaction::create_transaction,
+        user::{ create_user, delete_user, get_user_by_id, update_user },
+    },
+    repositories::{ user::UserRepo, transaction::TransactionRepo },
     setting::Settings,
-    usecases::user::{ UserUseCase, UserUseCaseImpl },
-    repositories::user::{ UserRepo },
+    usecases::{
+        user::{ UserUseCase, UserUseCaseImpl },
+        transaction::{ TransactionUseCase, TransactionUseCaseImpl },
+    },
 };
 use sqlx::mysql::MySqlPoolOptions;
 use tracing::{ info, Level };
@@ -23,9 +29,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .connect(&settings.get_database_url().as_str()).await?;
     info!("Database connection pool created");
 
-    let user_repo = UserRepo::new(database_pool);
+    let user_repo = UserRepo::new(database_pool.clone());
     let user_usecase = UserUseCaseImpl::new(user_repo);
-    let app = create_router(user_usecase);
+    let transaction_repo = TransactionRepo::new(database_pool.clone());
+    let transaction_usecase = TransactionUseCaseImpl::new(transaction_repo);
+    let app = create_router(user_usecase, transaction_usecase);
 
     let bind_addr = format!("0.0.0.0:{}", settings.server_port);
     let listener = tokio::net::TcpListener::bind(&bind_addr).await?;
@@ -35,20 +43,32 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn create_router(user_usecase: Arc<UserUseCaseImpl>) -> Router {
+fn create_router(
+    user_usecase: Arc<UserUseCaseImpl>,
+    transaction_usecase: Arc<TransactionUseCaseImpl>
+) -> Router {
     let user_usecase = Arc::clone(&user_usecase);
+    let transaction_usecase = Arc::clone(&transaction_usecase);
 
+    // User routes
+    let user_routes = Router::new()
+        .route("/create", post(create_user))
+        .route("/", get(get_user_by_id))
+        .route("/update", post(update_user))
+        .route("/delete", delete(delete_user))
+        .with_state(user_usecase);
+
+    // Transaction routes
+    let transaction_routes = Router::new()
+        .route("/create", post(create_transaction))
+        .with_state(transaction_usecase);
+
+    // Final app router
     Router::new()
-        // Routes
-        .route("/api/v1/user/create", post(create_user))
-        .route("/api/v1/user", get(get_user_by_id))
-        .route("/api/v1/user/update", post(update_user))
-        .route("/api/v1/user/delete", delete(delete_user))
-        // Middleware
+        .nest("/api/v1/user", user_routes)
+        .nest("/api/v1/transaction", transaction_routes)
         .layer(cors_layer())
         .layer(TraceLayer::new_for_http())
-        // State
-        .with_state(user_usecase)
 }
 
 fn cors_layer() -> CorsLayer {
