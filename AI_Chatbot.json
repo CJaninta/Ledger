@@ -122,6 +122,30 @@
           "name": "MySQL account"
         }
       }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT \n  users.id,\n  users.name\nFROM \n  transactions\nINNER JOIN \n  users ON users.id = transactions.user_id\nWHERE users.name LIKE \"%{{ $fromAI('Query_Parameters', ``, 'string') }}%\";",
+        "options": {
+          "detailedOutput": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Output_Query_Execution_Details', ``, 'boolean') }}"
+        }
+      },
+      "type": "n8n-nodes-base.mySqlTool",
+      "typeVersion": 2.4,
+      "position": [
+        260,
+        280
+      ],
+      "id": "a05afaff-afcc-4edb-85df-c39dedec6608",
+      "name": "Join user, transaction",
+      "alwaysOutputData": false,
+      "credentials": {
+        "mySql": {
+          "id": "zuMC2rrT5sbk7vaH",
+          "name": "MySQL account"
+        }
+      }
     }
   ],
   "pinData": {},
@@ -180,13 +204,24 @@
           }
         ]
       ]
+    },
+    "Join user, transaction": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": false,
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "69ca760b-7bbf-4242-96ca-d6b870fb3d25",
+  "versionId": "eade3089-ff45-47d4-a7b5-bcf518296442",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "d1cc7900c6f7fd7e9e82f51c40eb0082c5613d01a4535a110f28f42dda1131b5"
